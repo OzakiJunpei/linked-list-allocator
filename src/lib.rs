@@ -239,7 +239,7 @@ unsafe impl GlobalAlloc for LockedHeap {
             .lock()
             .allocate_first_fit(layout)
             .ok()
-            .map_or(0 as *mut u8, |allocation| allocation.as_ptr())
+            .map_or(0 as *mut u8, |allocation| allocation.as_ptr());
         //ここで時間の測定終了
         let end = start.elapsed();
         //allocの動作時間を出力
