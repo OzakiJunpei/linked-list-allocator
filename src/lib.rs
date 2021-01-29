@@ -15,8 +15,6 @@ extern crate spinning_top;
 #[cfg(feature = "use_spin")]
 use core::alloc::GlobalAlloc;
 use core::alloc::Layout;
-use std::time::{Duration, Instant};
-use std::slice;
 #[cfg(feature = "alloc_ref")]
 use core::alloc::{AllocError, Allocator};
 #[cfg(feature = "use_spin")]
@@ -219,69 +217,18 @@ impl Deref for LockedHeap {
 #[cfg(feature = "use_spin")]
 unsafe impl GlobalAlloc for LockedHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        //ここで,確保するアドレスがすでに使用されてないかの確認をする.
-        //スライスを作成し,確保範囲が赤(1)でないことを確認する.
-        let checkalloc = unsafe {slice::from_raw_parts(ptr,layout_size())};
-        let mut count = 0;
-        for i in 0..layout_size(){
-            if checalloc[i] != 1{
-                count += 1;
-            }
-        }
-        if count != layout_size(){
-            println!("allocate's is incorrect");
-        } else {
-            println!("allocate's is correct");
-        }
-        //ここから時間の測定開始
-        let start = Instant::now();
         self.0
             .lock()
             .allocate_first_fit(layout)
             .ok()
-            .map_or(0 as *mut u8, |allocation| allocation.as_ptr());
-        //ここで時間の測定終了
-        let end = start.elapsed();
-        //allocの動作時間を出力
-        println!("time for alloc = {}.{:03}s", end.as_secs(), end.subsec_nanos() / 1_000_000);
-        //ここに、確保したアドレスを参照する可変式スライスを作成(開始アドレス:ptr?,要素数:layout_size?)
-        //そこから値を赤(1)に設定
-        let paintred = unsafe {slice::from_raw_parts_mut(ptr,layout_size())};
-        for i in 0..layout_size(){
-            paintred[i] = 1;
-        }
+            .map_or(0 as *mut u8, |allocation| allocation.as_ptr())
+       
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        //ここで、要求したアドレスが適切かをスライスで参照して確認
-        //(全ての値が1かどうか)
-        let checkdealloc = unsafe {slice::from_raw_parts(ptr,layout_size())};
-        let mut count = 0;
-        for i in 0..layout_size(){
-            if checdealloc[i] == 1{
-                count += 1;
-            }
-        }
-        if count != layout_size(){
-            println!("deallocate's is incorrect");
-        } else {
-            println!("deallocate's is correct");
-        }
-        //ここから時間の測定開始
-        let start = Instant::now();
         self.0
             .lock()
             .deallocate(NonNull::new_unchecked(ptr), layout);
-        //ここで時間の測定終了
-        let end = start.elapsed();
-        //deallocの動作時間を出力
-        println!("time for dealloc = {}.{:03}s", end.as_secs(), end.subsec_nanos() / 1_000_000);
-        //開放した領域を色付け
-        //スライスを使って対象部分の値を青(2)に設定
-        let paintblue = unsafe {slice::from_raw_parts_mut(ptr,layout_size())};
-        for i in 0..layout_size(){
-            paintred[i] = 2;
-        }
     }
 }
 
