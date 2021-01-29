@@ -15,6 +15,8 @@ extern crate spinning_top;
 #[cfg(feature = "use_spin")]
 use core::alloc::GlobalAlloc;
 use core::alloc::Layout;
+use std::time::{Duration, Instant};
+use std::slice;
 #[cfg(feature = "alloc_ref")]
 use core::alloc::{AllocError, Allocator};
 #[cfg(feature = "use_spin")]
@@ -25,8 +27,6 @@ use hole::Hole;
 use hole::HoleList;
 #[cfg(feature = "use_spin")]
 use spinning_top::Spinlock;
-use std::time::{Duration, Instant};
-use std::slice;
 
 pub mod hole;
 #[cfg(test)]
@@ -258,7 +258,7 @@ unsafe impl GlobalAlloc for LockedHeap {
         let checkdealloc = unsafe {slice::from_raw_parts(ptr,layout_size())};
         let mut count = 0;
         for i in 0..layout_size(){
-            if checalloc[i] == 1{
+            if checdealloc[i] == 1{
                 count += 1;
             }
         }
@@ -271,7 +271,7 @@ unsafe impl GlobalAlloc for LockedHeap {
         let start = Instant::now();
         self.0
             .lock()
-            .deallocate(NonNull::new_unchecked(ptr), layout)
+            .deallocate(NonNull::new_unchecked(ptr), layout);
         //ここで時間の測定終了
         let end = start.elapsed();
         //deallocの動作時間を出力
